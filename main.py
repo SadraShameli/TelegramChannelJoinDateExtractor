@@ -26,7 +26,7 @@ async def addChannelsIDs():
 async def addChannelsExtractedData(channelsList):
     for channelID in channelsList:
         channel = await client.get_entity(channelID)
-        joinedDate = channel.date.strftime("%d/%m/%Y")
+        joinedDate = channel.date.strftime("%d/%m/%Y - %H_%M_%S")
         channelsExtractedInfos.append(f"{channel.title} : {joinedDate}")
 
 
