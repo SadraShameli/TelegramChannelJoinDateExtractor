@@ -43,7 +43,7 @@ def getDateTimeNow():
 
 
 def main():
-    print("Please enter a session Name:")
+    print("Please enter a session name:")
 
     sessionName = input()
     sessionsFolder = f"{sessions_folder}/{sessionName}"
