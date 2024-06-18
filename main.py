@@ -3,18 +3,22 @@ import asyncio
 from datetime import datetime
 from dotenv import load_dotenv
 from telethon import TelegramClient
+from pathlib import Path
+
 
 load_dotenv()
 
-cache_folder = os.getenv("CACHE_FOLDER")
-sessions_folder = os.getenv("SESSIONS_FOLDER")
-data_folder = os.getenv("DATA_FOLDER")
+
+cache_folder = Path(".cache")
+sessions_folder = cache_folder / "sessions"
+dates_folder = Path("dates")
 api_id = os.getenv("API_ID")
 api_hash = os.getenv("API_HASH")
 
+
 channelsIDs = []
 channelsExtractedInfos = []
-client = None
+client: TelegramClient
 
 
 async def addChannelsIDs():
@@ -23,39 +27,43 @@ async def addChannelsIDs():
             channelsIDs.append(dialog.id)
 
 
-async def addChannelsExtractedData(channelsList):
+async def extractDates(channelsList):
     for channelID in channelsList:
         channel = await client.get_entity(channelID)
         joinedDate = channel.date.strftime("%B %d, %Y - %H:%M:%S")
         channelsExtractedInfos.append(f"{channel.title} : {joinedDate}")
 
 
-def writeStrToFile(filename, lines):
-    filenameWithExtention = f"{filename}.txt"
-    with open(filenameWithExtention, "w", encoding="utf-8") as f:
+def writeStrToFile(file, lines):
+    filename = f"{file}.txt"
+    with open(filename, "w", encoding="utf-8") as f:
         for line in lines:
             f.write(f"{line}\n")
-    print(f"Extracted data saved to file: {filenameWithExtention}")
+    print(f"Extracted dates saved to file: {filename}")
 
 
 def getDateTimeNow():
-    return datetime.today().strftime("%d_%m_%Y - %H_%M_%S")
+    return datetime.today().strftime("%d %b, %Y - %H.%M")
 
 
 def main():
-    print("Please enter a session name:")
+    os.makedirs(cache_folder, exist_ok=True)
+    os.makedirs(dates_folder, exist_ok=True)
+    os.makedirs(sessions_folder, exist_ok=True)
 
+    print("Please enter a session name:")
     sessionName = input()
-    sessionsFolder = f"{sessions_folder}/{sessionName}"
+    sessionLocation = sessions_folder / sessionName
+    os.makedirs(sessionLocation, exist_ok=True)
 
     global client
-    client = TelegramClient(sessionsFolder, api_id, api_hash)
+    client = TelegramClient(sessionLocation / sessionName, api_id, api_hash)
     client.start()
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(addChannelsIDs())
-    loop.run_until_complete(addChannelsExtractedData(channelsIDs))
-    writeStrToFile(f"{data_folder}/{getDateTimeNow()}", channelsExtractedInfos)
+    loop.run_until_complete(extractDates(channelsIDs))
+    writeStrToFile(dates_folder / getDateTimeNow(), channelsExtractedInfos)
 
 
 if __name__ == "__main__":
