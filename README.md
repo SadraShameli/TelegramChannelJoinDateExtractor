@@ -1,7 +1,6 @@
 ## Telegram Channel Join Date Extractor
 
-- Song files will have the following formatting for their names:<br>
-  `{{list-name}}/{{artists}} - {{title}}.{{output-ext}}`
+- This script will help you to figure out when you join a channel in your telegram account
 
 ---
 
