@@ -6,7 +6,8 @@
   `{%d %b, %Y - %H.%M}.txt`
 
 > [!IMPORTANT]  
-> You will need to create a telegram application and provide your API ID and API Hash inside a .env file.
+> You will need to create a telegram application and provide your API ID and API Hash inside a .env file.<br>
+> This can be done by following the steps as outlined here: [core.telegram.org](https://core.telegram.org/api/obtaining_api_id)
 
 ---
 
