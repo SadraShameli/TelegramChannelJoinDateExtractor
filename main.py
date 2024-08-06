@@ -1,4 +1,5 @@
 import os
+import csv
 import asyncio
 from datetime import datetime
 from dotenv import load_dotenv
@@ -9,61 +10,68 @@ from pathlib import Path
 load_dotenv()
 
 
-cache_folder = Path(".cache")
-sessions_folder = cache_folder / "sessions"
-dates_folder = Path("dates")
-api_id = os.getenv("API_ID")
-api_hash = os.getenv("API_HASH")
+CACHE_FOLDER = Path(".cache")
+SESSIONS_FOLDER = CACHE_FOLDER / "sessions"
+DATA_FOLDER = Path("data")
+API_ID = os.getenv("API_ID")
+API_HASH = os.getenv("API_HASH")
 
 
-channelsIDs = []
-channelsExtractedInfos = []
-client: TelegramClient
+async def RetrieveData(session_folder):
+    client = TelegramClient(session_folder, API_ID, API_HASH)
+    await client.start()
+    channels_id = []
 
-
-async def addChannelsIDs():
     async for dialog in client.iter_dialogs():
         if dialog.is_channel:
-            channelsIDs.append(dialog.id)
+            channels_id.append(dialog.id)
 
+    file_date = DATA_FOLDER / datetime.today().strftime("%d %b, %Y - %H.%M")
+    filename_txt = f"{file_date}.txt"
+    filename_csv = f"{file_date}.csv"
+    txt_content = []
 
-async def extractDates(channelsList):
-    for channelID in channelsList:
-        channel = await client.get_entity(channelID)
-        joinedDate = channel.date.strftime("%B %d, %Y - %H:%M:%S")
-        channelsExtractedInfos.append(f"{channel.title} : {joinedDate}")
+    with open(filename_csv, "w", encoding="utf-8", newline="") as csv_file:
+        fieldNames = ["Telegram Channel Name", "Channel Join Date", "Channel Link"]
+        writer = csv.DictWriter(csv_file, fieldnames=fieldNames)
+        writer.writeheader()
 
+        for channelId in channels_id:
+            channel = await client.get_entity(channelId)
 
-def writeStrToFile(file, lines):
-    filename = f"{file}.txt"
-    with open(filename, "w", encoding="utf-8") as f:
-        for line in lines:
-            f.write(f"{line}\n")
-    print(f"Extracted dates saved to file: {filename}")
+            channel_name = channel.title
+            channel_joindate = channel.date.strftime("%B %d, %Y - %H:%M:%S")
+            channel_link = (
+                "https://t.me/" + channel.username if channel.username else " "
+            )
 
+            writer.writerow(
+                {
+                    fieldNames[0]: channel_name,
+                    fieldNames[1]: channel_joindate,
+                    fieldNames[2]: channel_link,
+                }
+            )
+            txt_content.append(f"{channel_name}: {channel_joindate}")
 
-def getDateTimeNow():
-    return datetime.today().strftime("%d %b, %Y - %H.%M")
+    with open(filename_txt, "w", encoding="utf-8", newline="\n") as txt_file:
+        txt_file.writelines(line + "\n" for line in txt_content)
+
+    print(f"Extracted data saved to files: {filename_txt} and {filename_csv}")
 
 
 def main():
-    os.makedirs(cache_folder, exist_ok=True)
-    os.makedirs(dates_folder, exist_ok=True)
-    os.makedirs(sessions_folder, exist_ok=True)
-
     print("Please enter a session name:")
-    sessionName = input()
-    sessionLocation = sessions_folder / sessionName
-    os.makedirs(sessionLocation, exist_ok=True)
+    session_name = "mozhgan"
+    session_folder = SESSIONS_FOLDER / session_name
 
-    global client
-    client = TelegramClient(sessionLocation / sessionName, api_id, api_hash)
-    client.start()
+    os.makedirs(session_folder, exist_ok=True)
+    os.makedirs(CACHE_FOLDER, exist_ok=True)
+    os.makedirs(DATA_FOLDER, exist_ok=True)
+    os.makedirs(SESSIONS_FOLDER, exist_ok=True)
 
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(addChannelsIDs())
-    loop.run_until_complete(extractDates(channelsIDs))
-    writeStrToFile(dates_folder / getDateTimeNow(), channelsExtractedInfos)
+    loop = asyncio.new_event_loop()
+    loop.run_until_complete(RetrieveData(session_folder / session_name))
 
 
 if __name__ == "__main__":
